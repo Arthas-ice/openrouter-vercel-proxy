@@ -12,43 +12,57 @@ const bodySchema = z
   })
   .passthrough();
 
+function isValidResponsesTool(tool: Record<string, unknown>) {
+  if (tool.type === "openrouter:datetime") return true;
+  if (tool.type === "openrouter:web_search") return true;
+
+  return (
+    tool.type === "function" &&
+    typeof tool.name === "string" &&
+    !!tool.parameters &&
+    typeof tool.parameters === "object"
+  );
+}
+
 function normalizeResponsesBody(input: Record<string, unknown>) {
   const body = { ...input };
 
   if (Array.isArray(body.tools)) {
-    body.tools = body.tools.filter(Boolean).map((tool) => {
-      if (!tool || typeof tool !== "object") return tool;
+    body.tools = body.tools
+      .filter(Boolean)
+      .map((tool) => {
+        if (!tool || typeof tool !== "object") return null;
 
-      const t = tool as Record<string, unknown>;
+        const t = tool as Record<string, unknown>;
 
-      if (
-        t.type === "function" &&
-        t.function &&
-        typeof t.function === "object"
-      ) {
+        if (
+          t.type === "function" &&
+          t.function &&
+          typeof t.function === "object"
+        ) {
+          const fn = t.function as Record<string, unknown>;
+          const { function: _ignored, ...rest } = t;
+
+          return {
+            ...rest,
+            type: "function",
+            name: fn.name,
+            description: fn.description,
+            parameters: fn.parameters,
+            ...(fn.strict !== undefined ? { strict: fn.strict } : {}),
+          };
+        }
+
         return t;
-      }
-
-      if (
-        (t.type === "function" || "name" in t || "parameters" in t) &&
-        !t.function
-      ) {
-        const { name, description, parameters, strict, ...rest } = t;
-
-        return {
-          ...rest,
-          type: "function",
-          function: {
-            name,
-            description,
-            parameters,
-            ...(strict !== undefined ? { strict } : {}),
-          },
-        };
-      }
-
-      return t;
-    });
+      })
+      .filter((tool): tool is Record<string, unknown> => {
+        if (!tool) return false;
+        const ok = isValidResponsesTool(tool);
+        if (!ok) {
+          console.warn("Dropping invalid responses tool:", tool);
+        }
+        return ok;
+      });
   }
 
   return body;
