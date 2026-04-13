@@ -8,12 +8,15 @@ type Message = {
 };
 
 export function ChatBox() {
+  const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("x-ai/grok-4.20");
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
+  const canSend = useMemo(() => {
+    return input.trim().length > 0 && apiKey.trim().length > 0 && !loading;
+  }, [input, apiKey, loading]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -27,10 +30,11 @@ export function ChatBox() {
     setMessages(nextMessages);
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-openrouter-api-key": apiKey.trim(),
         },
         body: JSON.stringify({
           model,
@@ -43,12 +47,25 @@ export function ChatBox() {
       });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        const errMsg = data?.error || `HTTP ${res.status}`;
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: `Error: ${errMsg}` },
+        ]);
+        return;
+      }
+
       const reply = data?.choices?.[0]?.message?.content ?? "No response";
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Request failed";
-      setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${msg}` }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `Error: ${msg}` },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -66,7 +83,27 @@ export function ChatBox() {
       }}
     >
       <h1 style={{ marginTop: 0 }}>OpenRouter Proxy Demo</h1>
-      <p style={{ opacity: 0.8 }}>前端请求你自己的 Vercel API，再由服务端转发到 OpenRouter。</p>
+      <p style={{ opacity: 0.8 }}>
+        前端请求你自己的 Vercel API，并在请求头中携带用户自己的 OpenRouter Key。
+      </p>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: "block", marginBottom: 8 }}>OpenRouter API Key</label>
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder="sk-or-v1-..."
+          style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.14)",
+            background: "#121a30",
+            color: "white",
+          }}
+        />
+      </div>
 
       <div style={{ marginBottom: 16 }}>
         <label style={{ display: "block", marginBottom: 8 }}>Model</label>

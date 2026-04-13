@@ -13,33 +13,46 @@ export type ChatPayload = {
   stream?: boolean;
 };
 
-export async function callOpenRouter(payload: ChatPayload) {
-  const res = await fetch(`${env.OPENROUTER_BASE_URL}/chat/completions`, {
+export function extractApiKey(req: Request): string | null {
+  const auth = req.headers.get("authorization")?.trim();
+  const directKey = req.headers.get("x-openrouter-api-key")?.trim();
+  const xApiKey = req.headers.get("x-api-key")?.trim();
+
+  if (directKey) return directKey;
+  if (xApiKey) return xApiKey;
+
+  if (auth?.toLowerCase().startsWith("bearer ")) {
+    const token = auth.slice(7).trim();
+    if (token) return token;
+  }
+
+  return null;
+}
+
+export async function callOpenRouter(
+  req: Request,
+  path: string,
+  body: unknown
+) {
+  const apiKey = extractApiKey(req);
+
+  if (!apiKey) {
+    throw new Error("Missing API key. Pass it in x-openrouter-api-key or Authorization: Bearer <key>.");
+  }
+
+  const cleanBase = env.OPENROUTER_BASE_URL.replace(/\/+$/, "");
+  const cleanPath = path.replace(/^\/+/, "");
+  const url = `${cleanBase}/${cleanPath}`;
+
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: payload.model || env.DEFAULT_MODEL,
-      messages: payload.messages,
-      temperature: payload.temperature,
-      max_tokens: payload.max_tokens,
-      stream: payload.stream ?? false,
-    }),
-    cache: "no-store",
-  });
-  return res;
-}
-
-export async function listModels() {
-  const res = await fetch(`${env.OPENROUTER_BASE_URL}/models`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "HTTP-Referer": env.OPENROUTER_SITE_URL,
       "X-OpenRouter-Title": env.OPENROUTER_APP_NAME,
     },
+    body: JSON.stringify(body),
     cache: "no-store",
   });
 

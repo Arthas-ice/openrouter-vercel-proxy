@@ -18,23 +18,20 @@ function safeParseOrigin(origin: string | null): URL | null {
   }
 }
 
-export function isAllowedOrigin(origin: string | null): boolean {
+export function isDeniedOrigin(origin: string | null): boolean {
   const url = safeParseOrigin(origin);
   if (!url) return false;
 
-  // 1) 精确 origin 白名单
-  if (env.ALLOWED_ORIGINS.includes(url.origin)) {
+  if (env.DENY_ORIGINS.includes(url.origin)) {
     return true;
   }
 
-  // 2) localhost / 127.0.0.1 / ::1 放行（任意端口）
-  if (env.ALLOW_LOCALHOST && isLoopbackHostname(url.hostname)) {
+  if (env.DENY_LOCALHOST && isLoopbackHostname(url.hostname)) {
     return true;
   }
 
-  // 3) 指定 host 白名单，忽略端口
   const hostname = normalizeHostname(url.hostname);
-  if (env.ALLOWED_HOSTS.map(normalizeHostname).includes(hostname)) {
+  if (env.DENY_HOSTS.map(normalizeHostname).includes(hostname)) {
     return true;
   }
 
@@ -44,12 +41,14 @@ export function isAllowedOrigin(origin: string | null): boolean {
 export function corsHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization, x-openrouter-api-key, x-api-key",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
 
-  if (isAllowedOrigin(origin) && origin) {
+  // 不再做 allow 白名单。只要不是黑名单，就回显 origin
+  if (origin && !isDeniedOrigin(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
   }
 

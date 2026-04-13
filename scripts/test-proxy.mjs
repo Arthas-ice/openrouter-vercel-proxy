@@ -2,22 +2,20 @@
 
 const BASE_URL = process.env.PROXY_BASE_URL || "https://your-app.vercel.app";
 const PATHNAME = process.env.PROXY_PATH || "/api/chat";
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "sk-";
 // 如果你已经做成了通用代理，也可以改成：/api/proxy/chat/completions
 
 async function testNonStream() {
   console.log(`\n[non-stream] POST ${BASE_URL}${PATHNAME}`);
-
+  console.log("key", OPENROUTER_API_KEY);
   const res = await fetch(`${BASE_URL}${PATHNAME}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      // 如果你后面加了自定义鉴权，可以打开这一行
-      // "x-api-key": process.env.CLIENT_API_KEY || "",
-      // 这个 Origin 头在 Node 中可以手动模拟，方便测试你服务端的 origin 白名单
-      "Origin": "http://localhost:4000",
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "openai/gpt-4o-mini",
+      model: "x-ai/grok-4.20",
       stream: false,
       messages: [
         {
@@ -43,10 +41,11 @@ async function testStream() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Origin": "http://localhost:4000",
+      Origin: "http://localhost:4000",
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "openai/gpt-4o-mini",
+      model: "x-ai/grok-4.20",
       stream: true,
       messages: [
         {
