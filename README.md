@@ -1,7 +1,7 @@
 # OpenRouter Vercel Proxy
 
 一个可直接部署到 Vercel 的 Next.js + TypeScript 项目：
-- 前端调用 `/api/chat`
+- 前端调用 `/api/v1/chat/completions`
 - 服务端转发到 OpenRouter
 - API Key 保存在服务端环境变量中
 - 可继续扩展鉴权、限流、日志
@@ -21,18 +21,19 @@ npm run dev
 1. 推到 GitHub
 2. 在 Vercel 导入仓库
 3. 配置环境变量：
-   - `OPENROUTER_API_KEY`
    - `OPENROUTER_BASE_URL`
    - `OPENROUTER_APP_NAME`
    - `OPENROUTER_SITE_URL`
-   - `ALLOWED_ORIGINS`
+   - `DENY_ORIGINS`
+   - `DENY_HOSTS`
+   - `DENY_LOCALHOST`
    - `DEFAULT_MODEL`
 4. 点击部署
 
 ## 调用示例
 
 ```ts
-await fetch("https://your-domain.vercel.app/api/chat", {
+await fetch("https://your-domain.vercel.app/api/v1/chat/completions", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -44,10 +45,3 @@ await fetch("https://your-domain.vercel.app/api/chat", {
   })
 });
 ```
-
-## 建议下一步
-
-1. 给 `/api/chat` 增加你自己的客户端 API Key
-2. 接入 Redis 做限流
-3. 增加 usage logging
-4. 支持按用户控制模型白名单
