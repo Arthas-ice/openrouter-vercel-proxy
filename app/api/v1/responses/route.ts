@@ -12,6 +12,48 @@ const bodySchema = z
   })
   .passthrough();
 
+function normalizeResponsesBody(input: Record<string, unknown>) {
+  const body = { ...input };
+
+  if (Array.isArray(body.tools)) {
+    body.tools = body.tools.filter(Boolean).map((tool) => {
+      if (!tool || typeof tool !== "object") return tool;
+
+      const t = tool as Record<string, unknown>;
+
+      if (
+        t.type === "function" &&
+        t.function &&
+        typeof t.function === "object"
+      ) {
+        return t;
+      }
+
+      if (
+        (t.type === "function" || "name" in t || "parameters" in t) &&
+        !t.function
+      ) {
+        const { name, description, parameters, strict, ...rest } = t;
+
+        return {
+          ...rest,
+          type: "function",
+          function: {
+            name,
+            description,
+            parameters,
+            ...(strict !== undefined ? { strict } : {}),
+          },
+        };
+      }
+
+      return t;
+    });
+  }
+
+  return body;
+}
+
 export async function OPTIONS(req: Request) {
   const origin = req.headers.get("origin");
   return new Response(null, {
@@ -27,10 +69,7 @@ export async function POST(req: Request) {
     if (isDeniedOrigin(origin)) {
       return Response.json(
         { ok: false, error: "Origin is denied." },
-        {
-          status: 403,
-          headers: corsHeaders(origin),
-        },
+        { status: 403, headers: corsHeaders(origin) },
       );
     }
 
@@ -42,20 +81,22 @@ export async function POST(req: Request) {
           error:
             "Missing API key. Pass it in x-openrouter-api-key or Authorization: Bearer <key>.",
         },
-        {
-          status: 401,
-          headers: corsHeaders(origin),
-        },
+        { status: 401, headers: corsHeaders(origin) },
       );
     }
 
     const json = await req.json();
-    const body = bodySchema.parse(json);
+    const parsed = bodySchema.parse(json);
+    console.log("request", parsed);
+    const upstreamBody = normalizeResponsesBody({
+      ...parsed,
+      model: parsed.model || env.DEFAULT_MODEL,
+    });
 
-    const upstreamBody = {
-      ...body,
-      model: body.model || env.DEFAULT_MODEL,
-    };
+    console.log(
+      "normalized responses tools:",
+      JSON.stringify((upstreamBody as any).tools ?? null, null, 2),
+    );
 
     const upstream = await callOpenRouter(req, "responses", upstreamBody);
 

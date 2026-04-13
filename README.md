@@ -1,7 +1,7 @@
 # OpenRouter Vercel Proxy
 
 一个可直接部署到 Vercel 的 Next.js + TypeScript 项目：
-- 前端调用 `/api/v1/chat/completions`
+- 前端调用 `/api/v1/chat/completions` /``/api/v1/chat/responses``
 - 服务端转发到 OpenRouter
 - API Key 保存在服务端环境变量中
 - 可继续扩展鉴权、限流、日志
