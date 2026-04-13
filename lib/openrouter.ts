@@ -32,27 +32,34 @@ export function extractApiKey(req: Request): string | null {
 export async function callOpenRouter(
   req: Request,
   path: string,
-  body: unknown
+  body: unknown,
+  init?: {
+    method?: string;
+  },
 ) {
   const apiKey = extractApiKey(req);
 
   if (!apiKey) {
-    throw new Error("Missing API key. Pass it in x-openrouter-api-key or Authorization: Bearer <key>.");
+    throw new Error(
+      "Missing API key. Pass it in x-openrouter-api-key or Authorization: Bearer <key>.",
+    );
   }
 
   const cleanBase = env.OPENROUTER_BASE_URL.replace(/\/+$/, "");
   const cleanPath = path.replace(/^\/+/, "");
   const url = `${cleanBase}/${cleanPath}`;
 
+  const method = init?.method ?? "POST";
+
   const res = await fetch(url, {
-    method: "POST",
+    method,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
       "HTTP-Referer": env.OPENROUTER_SITE_URL,
       "X-OpenRouter-Title": env.OPENROUTER_APP_NAME,
     },
-    body: JSON.stringify(body),
+    body: body == null ? undefined : JSON.stringify(body),
     cache: "no-store",
   });
 

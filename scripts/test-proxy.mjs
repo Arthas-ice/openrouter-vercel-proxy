@@ -15,7 +15,7 @@ async function testNonStream() {
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "x-ai/grok-4.20",
+      model: "openai/gpt-4o-mini",
       stream: false,
       messages: [
         {
@@ -45,7 +45,7 @@ async function testStream() {
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "x-ai/grok-4.20",
+      model: "openai/gpt-4o-mini",
       stream: true,
       messages: [
         {

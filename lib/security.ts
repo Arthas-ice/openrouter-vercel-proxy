@@ -31,7 +31,8 @@ export function isDeniedOrigin(origin: string | null): boolean {
   }
 
   const hostname = normalizeHostname(url.hostname);
-  if (env.DENY_HOSTS.map(normalizeHostname).includes(hostname)) {
+  const denyHosts = env.DENY_HOSTS.map(normalizeHostname);
+  if (denyHosts.includes(hostname)) {
     return true;
   }
 
@@ -47,7 +48,6 @@ export function corsHeaders(origin: string | null): Record<string, string> {
     Vary: "Origin",
   };
 
-  // 不再做 allow 白名单。只要不是黑名单，就回显 origin
   if (origin && !isDeniedOrigin(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
   }
