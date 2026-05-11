@@ -15,10 +15,18 @@ export type ChatPayload = {
 
 export function extractApiKey(req: Request): string | null {
   const auth = req.headers.get("authorization")?.trim();
-  const directKey = req.headers.get("x-openrouter-api-key")?.trim();
+
+  const openrouterKey = req.headers.get("x-openrouter-api-key")?.trim();
+  const aiGatewayKey = req.headers.get("x-ai-gateway-api-key")?.trim();
+  const vercelGatewayKey = req.headers
+    .get("x-vercel-ai-gateway-api-key")
+    ?.trim();
+
   const xApiKey = req.headers.get("x-api-key")?.trim();
 
-  if (directKey) return directKey;
+  if (openrouterKey) return openrouterKey;
+  if (aiGatewayKey) return aiGatewayKey;
+  if (vercelGatewayKey) return vercelGatewayKey;
   if (xApiKey) return xApiKey;
 
   if (auth?.toLowerCase().startsWith("bearer ")) {
@@ -41,7 +49,7 @@ export async function callOpenRouter(
 
   if (!apiKey) {
     throw new Error(
-      "Missing API key. Pass it in x-openrouter-api-key or Authorization: Bearer <key>.",
+      "Missing API key. Pass it in x-openrouter-api-key, x-ai-gateway-api-key, x-api-key, or Authorization: Bearer <key>.",
     );
   }
 

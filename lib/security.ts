@@ -32,6 +32,7 @@ export function isDeniedOrigin(origin: string | null): boolean {
 
   const hostname = normalizeHostname(url.hostname);
   const denyHosts = env.DENY_HOSTS.map(normalizeHostname);
+
   if (denyHosts.includes(hostname)) {
     return true;
   }
@@ -42,8 +43,14 @@ export function isDeniedOrigin(origin: string | null): boolean {
 export function corsHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers":
-      "Content-Type, Authorization, x-openrouter-api-key, x-api-key",
+    "Access-Control-Allow-Headers": [
+      "Content-Type",
+      "Authorization",
+      "x-openrouter-api-key",
+      "x-ai-gateway-api-key",
+      "x-vercel-ai-gateway-api-key",
+      "x-api-key",
+    ].join(", "),
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
